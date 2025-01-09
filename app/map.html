@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-Screen Map with Route Planner</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        #map-container {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #control-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        #control-panel label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        #control-panel input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #control-panel button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #control-panel button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="map-container">{{ map_html|safe }}</div>
+    <div id="control-panel">
+        <label for="start">Start (Place Name):</label>
+        <input type="text" id="start" placeholder="Enter start location">
+        <label for="end">End (Place Name):</label>
+        <input type="text" id="end" placeholder="Enter end location">
+        <button id="calculate-route">Calculate Route</button>
+    </div>
+
+    <script>
+        const calculateRouteBtn = document.getElementById("calculate-route");
+        const startInput = document.getElementById("start");
+        const endInput = document.getElementById("end");
+        const mapContainer = document.getElementById("map-container");
+
+        calculateRouteBtn.addEventListener("click", () => {
+            const startPlace = startInput.value.trim();
+            const endPlace = endInput.value.trim();
+
+            if (startPlace && endPlace) {
+                fetch("/calculate_route", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        start: startPlace,
+                        end: endPlace,
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.map_html) {
+                        // Update the map container with the new map HTML
+                        mapContainer.innerHTML = data.map_html;
+
+                        // Dynamically reinitialize the map's interactive features
+                        eval(data.map_html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            } else {
+                alert("Please provide valid place names for both Start and End.");
+            }
+        });
+    </script>
+</body>
+</html>
